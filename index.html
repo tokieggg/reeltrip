@@ -12,16 +12,6 @@
     <form id="paste">
       <input id="url" type="text" inputmode="url" placeholder="Paste a reel link" autocomplete="off">
       <button type="submit">Update the trip</button>
-      <details>
-        <summary>Add the caption if this reel is new</summary>
-        <textarea id="caption" rows="5" placeholder="Paste the caption"></textarea>
-      </details>
-      <details>
-        <summary>Google lookup, optional</summary>
-        <p class="quiet">A Gemini key stays on this phone. It is not part of the GitHub project. With a key, a new link is searched, then the places are pinned.</p>
-        <input id="gemini" type="password" placeholder="Gemini API key" autocomplete="off">
-        <button type="button" id="save-key">Save key on this phone</button>
-      </details>
     </form>
     <p id="status"></p>
     <div id="map"></div>

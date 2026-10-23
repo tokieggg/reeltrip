@@ -4,19 +4,12 @@ A small phone page for one drive north of Sydney. It keeps the places, the map, 
 
 ## What happens when you paste a reel
 
-The page cannot ask google.com a question. Google’s AI on google.com is not an API. The version of that idea you can actually call is **Gemini**, with Google Search turned on.
+Paste the link only. There is no caption box and no API key.
 
-Searching a bare Instagram link is a weak lookup. Those reels are often missing from Google’s index, so the model has nothing real to summarise and must not invent a place. It works much better when the caption is in the paste, or when the reel is one this trip already knows.
+1. If the reel is one this trip already knows, its places are pinned at once. The drive north keeps the road kilometres already measured: 46, 6, 50, and 22.
+2. For any other link, the page asks Instagram for the public caption and pins each street address it finds.
 
-What the page does, in order:
-
-1. **A reel already saved in the app.** The links from this trip are in `KNOWN` in `app.js`. Paste one and its places are pinned. The drive north keeps the road kilometres already measured: 46, 6, 50, and 22.
-2. **A caption pasted with the link.** The phone reads street addresses out of that text and asks OpenStreetMap to turn each one into a pin. Several places become the new numbered route. The kilometres between them are straight-line, because no routing server is called.
-3. **A Gemini key saved on this phone.** Open “Google lookup, optional”, paste a key from [Google AI Studio](https://aistudio.google.com/apikey), and save it. The key stays in this browser. It is not written into the GitHub repository. A new link is then sent to Gemini with Search. Places it returns are geocoded and the map updates. If Search cannot see the reel, the page says so.
-
-In Google AI Studio you can restrict the key to your Pages address, `https://YOUR_NAME.github.io/*`, so a copied key is less useful elsewhere.
-
-Instagram does not let a website download the reel. The video is never stored. **Open in Instagram** uses the link you pasted.
+Instagram often refuses that request when it comes from a website. Google’s AI is not used, because those reels are usually missing from Google. The video is never stored. The reel link under the map opens it in Instagram.
 
 Places you add, and the trip file from Export, stay in this browser. They are not uploaded to GitHub.
 

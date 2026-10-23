@@ -1,11 +1,8 @@
-// Known reels are pinned from KNOWN. A new reel is read from a caption
-// on this phone, or from Gemini with Google Search if a key is saved
-// in this browser. The key is never written into the project.
+// Paste a reel link. Known reels are pinned from KNOWN.
+// A new reel is read from Instagram's public caption.
 
 const NORTH = "https://www.instagram.com/reel/DbpLbAfJo8R/";
 const STORAGE_KEY = "sydney-trip-v1";
-const KEY_STORAGE = "sydney-trip-gemini-key";
-const GEMINI_MODEL = "gemini-2.5-flash";
 
 const LEGS = [
   ["sydney", "pie", 46],
@@ -48,14 +45,10 @@ const state = load();
 let selectedId = "pie";
 
 const urlInput = document.querySelector("#url");
-const captionInput = document.querySelector("#caption");
 const statusEl = document.querySelector("#status");
 
 document.querySelector("#paste").addEventListener("submit", onPaste);
-document.querySelector("#save-key").addEventListener("click", saveKey);
 document.querySelector("#export").addEventListener("click", exportTrip);
-const geminiInput = document.querySelector("#gemini");
-if (localStorage.getItem(KEY_STORAGE)) geminiInput.placeholder = "A key is saved on this phone";
 document.querySelector("#import").addEventListener("change", importTrip);
 document.querySelector("#reset").addEventListener("click", resetTrip);
 document.querySelector("#map").addEventListener("click", onMapClick);
@@ -63,34 +56,17 @@ document.querySelector("#list").addEventListener("click", onListClick);
 
 render();
 
-function saveKey() {
-  const key = geminiInput.value.trim();
-  if (!key) {
-    localStorage.removeItem(KEY_STORAGE);
-    geminiInput.placeholder = "Gemini API key";
-    setStatus("Removed the Gemini key from this phone.");
-    return;
-  }
-  localStorage.setItem(KEY_STORAGE, key);
-  geminiInput.value = "";
-  geminiInput.placeholder = "A key is saved on this phone";
-  setStatus("Saved the Gemini key on this phone only.");
-}
-
 async function onPaste(event) {
   event.preventDefault();
   const raw = urlInput.value.trim();
-  const typedCaption = captionInput.value.trim();
   const code = shortcode(raw);
-  const pastedCaption = raw.replace(/https?:\/\/\S+/g, " ").replace(/\s+/g, " ").trim();
-  const caption = [typedCaption, pastedCaption].filter(Boolean).join("\n");
-  if (!code && !caption) {
+  if (!code) {
     setStatus("Paste a reel link.");
     return;
   }
 
-  const reelUrl = code ? `https://www.instagram.com/reel/${code}/` : "";
-  if (code && KNOWN[code]) {
+  const reelUrl = `https://www.instagram.com/reel/${code}/`;
+  if (KNOWN[code]) {
     const known = KNOWN[code].map((item) => ({ ...item }));
     const renew = known.filter((item) => item.lat != null).length > 1;
     const added = adoptPlaces(known, renew);
@@ -100,37 +76,22 @@ async function onPaste(event) {
     return;
   }
 
-  let found = caption ? placesFromCaption(caption, reelUrl) : [];
-  const key = localStorage.getItem(KEY_STORAGE);
-  if (key && !found.length) {
-    setStatus("Asking Gemini to search that link…");
-    try {
-      const answer = await askGemini(key, reelUrl, caption);
-      found = answer.places.map((item) => place(
-        slug(item.name || "place"),
-        item.name || "Place",
-        numberOrNull(item.lat),
-        numberOrNull(item.lng),
-        null,
-        item.about || item.address || "From the search.",
-        item.about || item.address || "From the search.",
-        reelUrl,
-        item.address || item.name,
-      ));
-      if (!found.length) {
-        setStatus(answer.note || "Search did not name a place. Paste the caption as well.");
-        document.querySelector("details").open = true;
-        return;
-      }
-    } catch (error) {
-      setStatus(error.message || "Gemini did not answer.");
-      return;
-    }
+  setStatus("Reading the reel…");
+  let caption = "";
+  try {
+    caption = await readReel(code);
+  } catch {
+    setStatus("Instagram did not let this page read that reel. Links already saved in the trip still work.");
+    return;
   }
 
+  let found = placesFromCaption(caption, reelUrl);
   if (!found.length) {
-    setStatus("This reel is not in the saved list. Paste the caption, or save a Gemini key on this phone and try the link again.");
-    document.querySelector("details").open = true;
+    const unnamed = place("reel-" + code, "Untitled reel", null, null, null, "No place was written in the caption.", caption.slice(0, 280), reelUrl);
+    adoptPlaces([unnamed], false);
+    setStatus("The reel was read, but it did not name a place to pin.");
+    clearForm();
+    render();
     return;
   }
 
@@ -152,39 +113,13 @@ async function onPaste(event) {
   render();
 }
 
-async function askGemini(key, reelUrl, caption) {
-  const task = caption
-    ? `Extract every real place a traveller could visit from this Instagram caption. Do not invent a place that is not named. Return JSON only, with no markdown: {"places":[{"name":"","address":"","about":"","lat":null,"lng":null}],"note":""}. about is one sentence. lat and lng are numbers only when the caption states a specific venue you can locate in Australia.\n\nURL: ${reelUrl}\n\nCaption:\n${caption}`
-    : `Use Google Search to find which public places this Instagram reel is about. If the search results do not name a specific place, return an empty places list. Do not guess from the letters in the link. Return JSON only, with no markdown: {"places":[{"name":"","address":"","about":"","lat":null,"lng":null}],"note":""}.\n\nURL: ${reelUrl}`;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: task }] }],
-      tools: [{ google_search: {} }],
-    }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = data.error && data.error.message ? data.error.message : "Gemini refused the request.";
-    throw new Error(message);
-  }
-  const text = ((data.candidates || [])[0]?.content?.parts || []).map((part) => part.text || "").join("\n");
-  const parsed = parseModelJson(text);
-  return {
-    places: Array.isArray(parsed.places) ? parsed.places : [],
-    note: parsed.note || "",
-  };
-}
-
-function parseModelJson(text) {
-  const match = String(text).match(/\{[\s\S]*\}/);
-  if (!match) return {};
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return {};
-  }
+async function readReel(code) {
+  const endpoint = "https://www.instagram.com/api/v1/oembed/?url=" + encodeURIComponent("https://www.instagram.com/reel/" + code + "/");
+  const response = await fetch(endpoint);
+  if (!response.ok) throw new Error("blocked");
+  const data = await response.json();
+  if (!data.title) throw new Error("empty");
+  return data.title;
 }
 
 function placesFromCaption(caption, reelUrl) {
@@ -416,11 +351,6 @@ function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function numberOrNull(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
 function shortcode(value) {
   const match = String(value).match(/instagram\.com\/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/i);
   return match ? match[1] : "";
@@ -485,7 +415,6 @@ function labelFor(id, point) {
 
 function clearForm() {
   urlInput.value = "";
-  captionInput.value = "";
 }
 
 function setStatus(message) {
