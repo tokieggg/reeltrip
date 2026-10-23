@@ -1,0 +1,146 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f5f3;
+  --text: #1c1c1c;
+  --muted: #5e5c58;
+  --line: #e4e1db;
+  --accent: #1d4f8a;
+  --water: #e3eaf1;
+  --land: #f7f6f3;
+  --pin: #1d4f8a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+form { display: grid; gap: 0.6rem; }
+
+input[type="text"],
+input[type="password"],
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  border-radius: 0.5rem;
+  padding: 0.7rem 0.75rem;
+}
+
+textarea { resize: vertical; }
+
+button,
+summary {
+  font: inherit;
+}
+
+form > button {
+  justify-self: start;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+#status {
+  min-height: 1.2rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+#map {
+  margin-top: 1rem;
+}
+
+#map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.quiet {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.place {
+  padding: 0.7rem 0 0.7rem 0.7rem;
+  border-left: 2px solid transparent;
+}
+
+.place.selected { border-left-color: var(--accent); }
+
+.place button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.place strong { font-weight: 600; }
+
+.place p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.place a,
+#reel-link a {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.tools {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.text {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+#map button,
+.map-hit { cursor: pointer; }
